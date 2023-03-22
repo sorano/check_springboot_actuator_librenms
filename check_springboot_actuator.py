@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from __future__ import print_function
 
 import logging
@@ -10,9 +10,13 @@ from requests.exceptions import ConnectionError
 helper = PluginHelper()
 
 helper.parser.add_option(
-    '-U', '--url',
+    '-H', '--host',
     help='Base URL of Spring Boot Application (default: %default)',
     dest='url', default='http://localhost:8080')
+helper.parser.add_option(
+    '-p', '--port',
+    help='Destination port',
+    dest='port', default='8080')
 helper.parser.add_option(
     '-N', '--no-check-certificate',
     help="don't verify certificate", dest='verify',
@@ -32,7 +36,7 @@ helper.parser.add_option(
 
 helper.parse_arguments()
 
-health_endpoint = helper.options.url + '/health'
+health_endpoint = 'http://' + helper.options.url + ':' + helper.options.port + '/actuator/health'
 metrics_endpoint = helper.options.url + '/metrics'
 
 contenttype_v1 = 'application/vnd.spring-boot.actuator.v1'
@@ -57,7 +61,7 @@ def request_data(url, **get_args):
         if response.ok or response.status_code == 503:
             contenttype = response.headers['Content-Type']
             if contenttype.startswith('application/vnd.spring-boot'):
-                version = 1 
+                version = 1
                 if contenttype.startswith(contenttype_v2): version = 2
                 elif contenttype.startswith(contenttype_v3): version = 3
                 return response.json(), version, None
@@ -150,7 +154,7 @@ else:
     if version == 2:
         details = json_data['status']
     if version == 3 and 'components' in json_data :
-        details = json_data['components'] 
+        details = json_data['components']
 
     for item in [
         'cassandra', 'diskSpace', 'dataSource', 'elasticsearch', 'jms', 'mail',
